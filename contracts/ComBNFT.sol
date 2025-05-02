@@ -1,0 +1,104 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
+interface IHoneyToken {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bool);
+}
+
+contract ComBNFT is ERC721Enumerable, Ownable {
+    using Strings for uint256;
+
+    uint256 public nextTokenId;
+    string public baseURI;
+    uint8 public constant MAX_BCELLS = 7;
+
+    mapping(uint256 => uint8) public bcellCount;
+
+    IHoneyToken public honeyToken;
+    uint256 public forgeCost;
+    uint256 public mergeCost;
+
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        string memory baseURI_,
+        address honeyTokenAddress_,
+        uint256 forgeCost_,
+        uint256 mergeCost_
+    ) ERC721(name_, symbol_) {
+        baseURI = baseURI_;
+        honeyToken = IHoneyToken(honeyTokenAddress_);
+        forgeCost = forgeCost_;
+        mergeCost = mergeCost_;
+    }
+
+    function mint(address to) external onlyOwner {
+        uint256 tokenId = nextTokenId++;
+        _safeMint(to, tokenId);
+        bcellCount[tokenId] = 3;
+    }
+
+    function forge(uint256 tokenId) external {
+        require(ownerOf(tokenId) == msg.sender, "Not your NFT");
+        require(
+            bcellCount[tokenId] >= 1 && bcellCount[tokenId] < MAX_BCELLS,
+            "Cannot forge"
+        );
+        require(
+            honeyToken.transferFrom(msg.sender, address(this), forgeCost),
+            "HONEY transfer failed"
+        );
+        bcellCount[tokenId]++;
+    }
+
+    function merge(uint256 tokenId1, uint256 tokenId2) external {
+        require(
+            ownerOf(tokenId1) == msg.sender && ownerOf(tokenId2) == msg.sender,
+            "Not your NFTs"
+        );
+        require(
+            bcellCount[tokenId1] == 3 && bcellCount[tokenId2] == 3,
+            "Must be 3-bcell comBs"
+        );
+        require(
+            honeyToken.transferFrom(msg.sender, address(this), mergeCost),
+            "HONEY transfer failed"
+        );
+
+        bcellCount[tokenId1] = 6;
+        _burn(tokenId2);
+        delete bcellCount[tokenId2];
+    }
+
+    function burnBcell(uint256 tokenId) external {
+        require(ownerOf(tokenId) == msg.sender, "Not your NFT");
+        require(bcellCount[tokenId] >= 1, "No Bcells left");
+        bcellCount[tokenId]--;
+        if (bcellCount[tokenId] == 0) {
+            _burn(tokenId);
+        }
+    }
+
+    function setBaseURI(string memory uri) external onlyOwner {
+        baseURI = uri;
+    }
+
+    function tokenURI(
+        uint256 tokenId
+    ) public view override returns (string memory) {
+        require(_exists(tokenId), "Doesn't exist");
+        return string(abi.encodePacked(baseURI, tokenId.toString()));
+    }
+
+    function withdrawHONEY(address to, uint256 amount) external onlyOwner {
+        honeyToken.transferFrom(address(this), to, amount);
+    }
+}
