@@ -1,7 +1,7 @@
 
 const { expect } = require("chai");
 
-let comb, honey, owner, user;
+let comb, honey, user;
 
 describe("ComBNFT", function () {
   const baseURI = "ipfs://baseuri/";
@@ -59,4 +59,35 @@ describe("ComBNFT", function () {
     await comb.connect(user).burnBcell(0);
     await expect(comb.ownerOf(0)).to.be.reverted;
   });
+
+  it("should return correct tokenURI for 4 Bcells", async function () {
+    // Start with 3 Bcells (default)
+    await comb.connect(user).forge(0); // +1 → now 4 Bcells
+  
+    const uri = await comb.tokenURI(0);
+    expect(uri).to.equal("ipfs://baseuri/comb_4.json");
+  });
+
+  it("should return correct tokenURI for 6 Bcells after merge", async function () {
+    await comb.mint(user.address); // mint tokenId 1
+  
+    // Ensure user has enough HONEY to pay for merge
+    await honey.mint(user.address, 1000);
+    await honey.connect(user).approve(comb.target, 10000);
+  
+    await comb.connect(user).merge(0, 1); // tokenId 0 becomes 6 Bcells
+  
+    const uri = await comb.tokenURI(0);
+    expect(uri).to.equal("ipfs://baseuri/comb_6.json");
+  });
+  
+  it("should return correct tokenURI after burning down to 2 Bcells", async function () {
+    // Mint starts at 3 Bcells
+    await comb.connect(user).burnBcell(0); // now 2 Bcells
+  
+    const uri = await comb.tokenURI(0);
+    expect(uri).to.equal("ipfs://baseuri/comb_2.json");
+  });
+  
+  
 });

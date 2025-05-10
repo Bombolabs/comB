@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
@@ -92,8 +91,19 @@ contract ComBNFT is ERC721Enumerable, Ownable {
         baseURI = uri;
     }
 
-    function _baseURI() internal view override returns (string memory) {
-        return baseURI;
+    function tokenURI(
+        uint256 tokenId
+    ) public view override returns (string memory) {
+        uint8 count = bcellCount[tokenId];
+        return
+            string(
+                abi.encodePacked(
+                    baseURI,
+                    "comb_",
+                    Strings.toString(count),
+                    ".json"
+                )
+            );
     }
 
     function withdrawHONEY(address to, uint256 amount) external onlyOwner {
