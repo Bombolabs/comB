@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
@@ -33,7 +34,7 @@ contract ComBNFT is ERC721Enumerable, Ownable {
         address honeyTokenAddress_,
         uint256 forgeCost_,
         uint256 mergeCost_
-    ) ERC721(name_, symbol_) {
+    ) ERC721(name_, symbol_) Ownable(msg.sender) {
         baseURI = baseURI_;
         honeyToken = IHoneyToken(honeyTokenAddress_);
         forgeCost = forgeCost_;
@@ -64,15 +65,16 @@ contract ComBNFT is ERC721Enumerable, Ownable {
             ownerOf(tokenId1) == msg.sender && ownerOf(tokenId2) == msg.sender,
             "Not your NFTs"
         );
-        require(tokenId1 != tokenId2, "Cannot merge same NFT");
+        require(
+            bcellCount[tokenId1] == 3 && bcellCount[tokenId2] == 3,
+            "Must be 3-bcell comBs"
+        );
         require(
             honeyToken.transferFrom(msg.sender, address(this), mergeCost),
             "HONEY transfer failed"
         );
 
-        uint8 total = bcellCount[tokenId1] + bcellCount[tokenId2];
-        bcellCount[tokenId1] = total > MAX_BCELLS ? MAX_BCELLS : total;
-
+        bcellCount[tokenId1] = 6;
         _burn(tokenId2);
         delete bcellCount[tokenId2];
     }
@@ -90,11 +92,8 @@ contract ComBNFT is ERC721Enumerable, Ownable {
         baseURI = uri;
     }
 
-    function tokenURI(
-        uint256 tokenId
-    ) public view override returns (string memory) {
-        require(_exists(tokenId), "Doesn't exist");
-        return string(abi.encodePacked(baseURI, tokenId.toString()));
+    function _baseURI() internal view override returns (string memory) {
+        return baseURI;
     }
 
     function withdrawHONEY(address to, uint256 amount) external onlyOwner {

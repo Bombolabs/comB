@@ -10,6 +10,9 @@ cache/
 artifacts/
 typechain/
 
+# Optional: Hardhat Ignition system state (experimental)
+ignition/
+
 # Env files
 .env
 .env.local
