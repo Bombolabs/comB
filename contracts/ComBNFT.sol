@@ -64,16 +64,15 @@ contract ComBNFT is ERC721Enumerable, Ownable {
             ownerOf(tokenId1) == msg.sender && ownerOf(tokenId2) == msg.sender,
             "Not your NFTs"
         );
-        require(
-            bcellCount[tokenId1] == 3 && bcellCount[tokenId2] == 3,
-            "Must be 3-bcell comBs"
-        );
+        require(tokenId1 != tokenId2, "Cannot merge same NFT");
         require(
             honeyToken.transferFrom(msg.sender, address(this), mergeCost),
             "HONEY transfer failed"
         );
 
-        bcellCount[tokenId1] = 6;
+        uint8 total = bcellCount[tokenId1] + bcellCount[tokenId2];
+        bcellCount[tokenId1] = total > MAX_BCELLS ? MAX_BCELLS : total;
+
         _burn(tokenId2);
         delete bcellCount[tokenId2];
     }
