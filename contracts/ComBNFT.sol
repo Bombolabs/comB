@@ -26,6 +26,13 @@ contract ComBNFT is ERC721Enumerable, Ownable {
     uint256 public forgeCost;
     uint256 public mergeCost;
 
+    // 🔔 Events
+    event Forged(uint256 indexed tokenId, uint8 newBcellCount);
+    event Merged(uint256 indexed survivor, uint256 burned);
+    event Burned(uint256 indexed tokenId, uint8 remainingBcells);
+    event HoneyWithdrawn(address to, uint256 amount);
+    event BatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId);
+
     constructor(
         string memory name_,
         string memory symbol_,
@@ -56,7 +63,9 @@ contract ComBNFT is ERC721Enumerable, Ownable {
             honeyToken.transferFrom(msg.sender, address(this), forgeCost),
             "HONEY transfer failed"
         );
+
         bcellCount[tokenId]++;
+        emit Forged(tokenId, bcellCount[tokenId]);
     }
 
     function merge(uint256 tokenId1, uint256 tokenId2) external {
@@ -76,12 +85,16 @@ contract ComBNFT is ERC721Enumerable, Ownable {
         bcellCount[tokenId1] = 6;
         _burn(tokenId2);
         delete bcellCount[tokenId2];
+        emit Merged(tokenId1, tokenId2);
     }
 
     function burnBcell(uint256 tokenId) external {
         require(ownerOf(tokenId) == msg.sender, "Not your NFT");
         require(bcellCount[tokenId] >= 1, "No Bcells left");
+
         bcellCount[tokenId]--;
+        emit Burned(tokenId, bcellCount[tokenId]);
+
         if (bcellCount[tokenId] == 0) {
             _burn(tokenId);
         }
@@ -89,6 +102,7 @@ contract ComBNFT is ERC721Enumerable, Ownable {
 
     function setBaseURI(string memory uri) external onlyOwner {
         baseURI = uri;
+        emit BatchMetadataUpdate(0, type(uint256).max);
     }
 
     function tokenURI(
@@ -96,17 +110,14 @@ contract ComBNFT is ERC721Enumerable, Ownable {
     ) public view override returns (string memory) {
         uint8 count = bcellCount[tokenId];
         return
-            string(
-                abi.encodePacked(
-                    baseURI,
-                    "comb_",
-                    Strings.toString(count),
-                    ".json"
-                )
-            );
+            string(abi.encodePacked(baseURI, "comb_", Strings.toString(count)));
     }
 
     function withdrawHONEY(address to, uint256 amount) external onlyOwner {
-        honeyToken.transferFrom(address(this), to, amount);
+        require(
+            honeyToken.transferFrom(address(this), to, amount),
+            "Withdraw failed"
+        );
+        emit HoneyWithdrawn(to, amount);
     }
 }
