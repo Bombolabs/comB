@@ -34,6 +34,7 @@ contract ComBNFT is ERC721Enumerable, Ownable {
     event Burned(uint256 indexed tokenId, uint8 remainingBcells);
     event HoneyWithdrawn(address to, uint256 amount);
     event BatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId);
+    event MetadataChanged(uint256 indexed tokenId);
 
     constructor(
         string memory name_,
@@ -68,6 +69,7 @@ contract ComBNFT is ERC721Enumerable, Ownable {
 
         bcellCount[tokenId]++;
         emit Forged(tokenId, bcellCount[tokenId]);
+        emit MetadataChanged(tokenId);
     }
 
     function merge(uint256 tokenId1, uint256 tokenId2) external {
@@ -88,6 +90,7 @@ contract ComBNFT is ERC721Enumerable, Ownable {
         _burn(tokenId2);
         delete bcellCount[tokenId2];
         emit Merged(tokenId1, tokenId2);
+        emit MetadataChanged(tokenId);
     }
 
     function burnBcell(uint256 tokenId) external {
@@ -96,6 +99,7 @@ contract ComBNFT is ERC721Enumerable, Ownable {
 
         bcellCount[tokenId]--;
         emit Burned(tokenId, bcellCount[tokenId]);
+        emit MetadataChanged(tokenId);
 
         if (bcellCount[tokenId] == 0) {
             _burn(tokenId);
