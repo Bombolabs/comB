@@ -11,6 +11,8 @@ interface IHoneyToken {
         address to,
         uint256 amount
     ) external returns (bool);
+
+    function transfer(address to, uint256 amount) external returns (bool);
 }
 
 contract ComBNFT is ERC721Enumerable, Ownable {
@@ -114,10 +116,7 @@ contract ComBNFT is ERC721Enumerable, Ownable {
     }
 
     function withdrawHONEY(address to, uint256 amount) external onlyOwner {
-        require(
-            honeyToken.transferFrom(address(this), to, amount),
-            "Withdraw failed"
-        );
+        require(honeyToken.transfer(to, amount), "Withdraw failed");
         emit HoneyWithdrawn(to, amount);
     }
 }
