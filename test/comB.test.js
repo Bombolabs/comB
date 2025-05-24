@@ -13,21 +13,21 @@ describe("ComBNFT", function () {
   
     const MockHoney = await ethers.getContractFactory("MockHoney");
     honey = await MockHoney.deploy();
-    console.log("HONEY ADDRESS:", honey.target);
+    console.log("HONEY ADDRESS:", honey.address);
   
     const ComBNFT = await ethers.getContractFactory("ComBNFT");
     comb = await ComBNFT.deploy(
       "comB",
       "COMB",
       baseURI,
-      honey.target,
+      honey.address,
       forgeCost,
       mergeCost
     );
-    await comb.waitForDeployment();
+    await comb.deployed();
   
     await honey.mint(user.address, 1000);
-    await honey.connect(user).approve(comb.target, 10000);
+    await honey.connect(user).approve(comb.address, 10000);
   
     await comb.mint(user.address);
   });
@@ -73,7 +73,7 @@ describe("ComBNFT", function () {
   
     // Ensure user has enough HONEY to pay for merge
     await honey.mint(user.address, 1000);
-    await honey.connect(user).approve(comb.target, 10000);
+    await honey.connect(user).approve(comb.address, 10000);
   
     await comb.connect(user).merge(0, 1); // tokenId 0 becomes 6 Bcells
   
@@ -88,6 +88,36 @@ describe("ComBNFT", function () {
     const uri = await comb.tokenURI(0);
     expect(uri).to.equal("ipfs://baseuri/comb_2.json");
   });
+
+  it("should allow the owner to withdraw HONEY", async function () {
+    const ownerAddr = await owner.getAddress();
   
+    // Mint HONEY to the ComBNFT contract
+    await honey.mint(comb.address, 500);
+  
+    // Check balances before
+    const before = await honey.balanceOf(ownerAddr);
+  
+    // Withdraw HONEY
+    await expect(comb.connect(owner).withdrawHONEY(ownerAddr, 500))
+      .to.emit(comb, "HoneyWithdrawn")
+      .withArgs(ownerAddr, 500);
+  
+    const after = await honey.balanceOf(ownerAddr);
+    expect(after.sub(before)).to.equal(500);
+  });
+  
+  it("should not allow non-owner to withdraw HONEY", async function () {
+    const userAddr = await user.getAddress();
+  
+    // Mint HONEY to the ComBNFT contract
+    await honey.mint(comb.address, 500);
+  
+    // Expect revert when user (not owner) tries to withdraw
+    await expect(
+      comb.connect(user).withdrawHONEY(userAddr, 500)
+    ).to.be.revertedWithCustomError(comb, "OwnableUnauthorizedAccount");
+    
+  });
   
 });

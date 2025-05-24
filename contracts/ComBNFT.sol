@@ -140,7 +140,14 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
     ) public view override returns (string memory) {
         uint8 count = bcellCount[tokenId];
         return
-            string(abi.encodePacked(baseURI, "comb_", Strings.toString(count)));
+            string(
+                abi.encodePacked(
+                    baseURI,
+                    "comb_",
+                    Strings.toString(count),
+                    ".json"
+                )
+            );
     }
 
     function withdrawHONEY(address to, uint256 amount) external onlyOwner {
