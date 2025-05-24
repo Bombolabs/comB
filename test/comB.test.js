@@ -69,7 +69,7 @@ describe("ComBNFT", function () {
   });
 
   it("should return correct tokenURI for 6 Bcells after merge", async function () {
-    await comb.mint(user.address); // mint tokenId 1
+    await comb.mint(user.address); 
   
     // Ensure user has enough HONEY to pay for merge
     await honey.mint(user.address, 1000);
