@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -15,7 +16,7 @@ interface IHoneyToken {
     function transfer(address to, uint256 amount) external returns (bool);
 }
 
-contract ComBNFT is ERC721Enumerable, Ownable {
+contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
     using Strings for uint256;
 
     uint256 public nextTokenId;
@@ -50,6 +51,23 @@ contract ComBNFT is ERC721Enumerable, Ownable {
         mergeCost = mergeCost_;
     }
 
+    function _isAuthorized(
+        address user,
+        uint256 tokenId
+    ) internal view returns (bool) {
+        address owner = ownerOf(tokenId);
+        return
+            user == owner ||
+            isApprovedForAll(owner, user) ||
+            getApproved(tokenId) == user;
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721, ERC721Enumerable) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+
     function mint(address to) external onlyOwner {
         uint256 tokenId = nextTokenId++;
         _safeMint(to, tokenId);
@@ -57,7 +75,7 @@ contract ComBNFT is ERC721Enumerable, Ownable {
     }
 
     function forge(uint256 tokenId) external {
-        require(ownerOf(tokenId) == msg.sender, "Not your NFT");
+        require(_isAuthorized(msg.sender, tokenId), "Not authorized");
         require(
             bcellCount[tokenId] >= 1 && bcellCount[tokenId] < MAX_BCELLS,
             "Cannot forge"
@@ -74,8 +92,12 @@ contract ComBNFT is ERC721Enumerable, Ownable {
 
     function merge(uint256 tokenId1, uint256 tokenId2) external {
         require(
-            ownerOf(tokenId1) == msg.sender && ownerOf(tokenId2) == msg.sender,
-            "Not your NFTs"
+            _isAuthorized(msg.sender, tokenId1),
+            "Not authorized for token 1"
+        );
+        require(
+            _isAuthorized(msg.sender, tokenId2),
+            "Not authorized for token 2"
         );
         require(
             bcellCount[tokenId1] == 3 && bcellCount[tokenId2] == 3,
@@ -89,12 +111,13 @@ contract ComBNFT is ERC721Enumerable, Ownable {
         bcellCount[tokenId1] = 6;
         _burn(tokenId2);
         delete bcellCount[tokenId2];
+
         emit Merged(tokenId1, tokenId2);
-        emit MetadataChanged(tokenId);
+        emit MetadataChanged(tokenId1);
     }
 
     function burnBcell(uint256 tokenId) external {
-        require(ownerOf(tokenId) == msg.sender, "Not your NFT");
+        require(_isAuthorized(msg.sender, tokenId), "Not authorized");
         require(bcellCount[tokenId] >= 1, "No Bcells left");
 
         bcellCount[tokenId]--;
@@ -103,6 +126,7 @@ contract ComBNFT is ERC721Enumerable, Ownable {
 
         if (bcellCount[tokenId] == 0) {
             _burn(tokenId);
+            delete bcellCount[tokenId];
         }
     }
 
@@ -122,5 +146,20 @@ contract ComBNFT is ERC721Enumerable, Ownable {
     function withdrawHONEY(address to, uint256 amount) external onlyOwner {
         require(honeyToken.transfer(to, amount), "Withdraw failed");
         emit HoneyWithdrawn(to, amount);
+    }
+
+    function _update(
+        address to,
+        uint256 tokenId,
+        address auth
+    ) internal override(ERC721, ERC721Enumerable) returns (address) {
+        return super._update(to, tokenId, auth);
+    }
+
+    function _increaseBalance(
+        address account,
+        uint128 amount
+    ) internal override(ERC721, ERC721Enumerable) {
+        super._increaseBalance(account, amount);
     }
 }
