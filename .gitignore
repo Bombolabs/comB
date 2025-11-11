@@ -5,6 +5,9 @@ yarn-debug.log
 yarn-error.log
 dist/
 
+# Airdrop files
+airdrop-data/
+
 # Hardhat cache & artifacts
 cache/
 artifacts/

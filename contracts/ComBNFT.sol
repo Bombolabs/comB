@@ -141,6 +141,8 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
     function tokenURI(
         uint256 tokenId
     ) public view override returns (string memory) {
+        require(_ownerOf(tokenId) != address(0), "ERC721: invalid token ID");
+
         uint8 count = bcellCount[tokenId];
         return
             string(

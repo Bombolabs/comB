@@ -1,0 +1,7 @@
+{
+  "name": "comB — 1 Bcell",
+  "description": "A mutable comB. Media updates dynamically with the current number of Bcells.",
+  "image": "ipfs://bafybeiejecjpek4ebgy4jnfru4zcd37ezfeiyu344nzjkjyfmqbh3fbaxy/comb_1_poster.jpg",
+  "animation_url": "ipfs://bafybeiejecjpek4ebgy4jnfru4zcd37ezfeiyu344nzjkjyfmqbh3fbaxy/comb_1.mp4",
+  "attributes": [{ "trait_type": "Bcells", "value": 1 }]
+}
