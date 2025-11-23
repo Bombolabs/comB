@@ -6,16 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-interface IHoneyToken {
-    function transferFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (bool);
-
-    function transfer(address to, uint256 amount) external returns (bool);
-}
-
 contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
     using Strings for uint256;
 
@@ -25,17 +15,12 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
 
     mapping(uint256 => uint8) public bcellCount;
 
-    IHoneyToken public honeyToken;
-    uint256 public forgeCost;
-    uint256 public mergeCost;
-
     address public controller;
     bool public controllerLocked;
 
     event Forged(uint256 indexed tokenId, uint8 newBcellCount);
     event Merged(uint256 indexed survivor, uint256 burned);
     event Burned(uint256 indexed tokenId, uint8 remainingBcells);
-    event HoneyWithdrawn(address to, uint256 amount);
     event BatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId);
     event MetadataChanged(uint256 indexed tokenId);
     event MetadataUpdate(uint256 indexed tokenId);
@@ -50,15 +35,9 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
     constructor(
         string memory name_,
         string memory symbol_,
-        string memory baseURI_,
-        address honeyTokenAddress_,
-        uint256 forgeCost_,
-        uint256 mergeCost_
+        string memory baseURI_
     ) ERC721(name_, symbol_) Ownable(msg.sender) {
         baseURI = baseURI_;
-        honeyToken = IHoneyToken(honeyTokenAddress_);
-        forgeCost = forgeCost_;
-        mergeCost = mergeCost_;
         controller = address(0);
         controllerLocked = false;
     }
@@ -86,37 +65,24 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
         bcellCount[tokenId] = 3;
     }
 
-    function forge(address payer, uint256 tokenId) external onlyController {
+    function forge(uint256 tokenId) external onlyController {
         require(_ownerOf(tokenId) != address(0), "Nonexistent token");
-        require(
-            bcellCount[tokenId] >= 1 && bcellCount[tokenId] < MAX_BCELLS,
-            "Cannot forge"
-        );
-        require(
-            honeyToken.transferFrom(payer, address(this), forgeCost),
-            "HONEY transfer failed"
-        );
+        uint8 current = bcellCount[tokenId];
+        require(current >= 1 && current < MAX_BCELLS, "Cannot forge");
 
-        bcellCount[tokenId]++;
+        bcellCount[tokenId] = current + 1;
+
         emit Forged(tokenId, bcellCount[tokenId]);
         emit MetadataChanged(tokenId);
         emit MetadataUpdate(tokenId);
     }
 
-    function merge(
-        address payer,
-        uint256 tokenId1,
-        uint256 tokenId2
-    ) external onlyController {
+    function merge(uint256 tokenId1, uint256 tokenId2) external onlyController {
         require(_ownerOf(tokenId1) != address(0), "Token1 nonexistent");
         require(_ownerOf(tokenId2) != address(0), "Token2 nonexistent");
         require(
             bcellCount[tokenId1] == 3 && bcellCount[tokenId2] == 3,
             "Must be 3-bcell comBs"
-        );
-        require(
-            honeyToken.transferFrom(payer, address(this), mergeCost),
-            "HONEY transfer failed"
         );
 
         bcellCount[tokenId1] = 6;
@@ -133,6 +99,7 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
         require(bcellCount[tokenId] >= 1, "No Bcells left");
 
         bcellCount[tokenId]--;
+
         emit Burned(tokenId, bcellCount[tokenId]);
         emit MetadataChanged(tokenId);
         emit MetadataUpdate(tokenId);
@@ -154,6 +121,7 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
         require(_ownerOf(tokenId) != address(0), "ERC721: invalid token ID");
 
         uint8 count = bcellCount[tokenId];
+
         return
             string(
                 abi.encodePacked(
@@ -163,11 +131,6 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
                     ".json"
                 )
             );
-    }
-
-    function withdrawHONEY(address to, uint256 amount) external onlyOwner {
-        require(honeyToken.transfer(to, amount), "Withdraw failed");
-        emit HoneyWithdrawn(to, amount);
     }
 
     function _update(
