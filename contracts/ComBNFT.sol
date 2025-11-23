@@ -29,13 +29,23 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
     uint256 public forgeCost;
     uint256 public mergeCost;
 
+    address public controller;
+    bool public controllerLocked;
+
     event Forged(uint256 indexed tokenId, uint8 newBcellCount);
     event Merged(uint256 indexed survivor, uint256 burned);
     event Burned(uint256 indexed tokenId, uint8 remainingBcells);
     event HoneyWithdrawn(address to, uint256 amount);
     event BatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId);
     event MetadataChanged(uint256 indexed tokenId);
-    event MetadataUpdate(uint256 indexed tokenId); // ERC-4906
+    event MetadataUpdate(uint256 indexed tokenId);
+    event ControllerUpdated(address indexed newController);
+    event ControllerLocked();
+
+    modifier onlyController() {
+        require(msg.sender == controller, "Not controller");
+        _;
+    }
 
     constructor(
         string memory name_,
@@ -49,17 +59,19 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
         honeyToken = IHoneyToken(honeyTokenAddress_);
         forgeCost = forgeCost_;
         mergeCost = mergeCost_;
+        controller = address(0);
+        controllerLocked = false;
     }
 
-    function _isAuthorized(
-        address user,
-        uint256 tokenId
-    ) internal view returns (bool) {
-        address owner = ownerOf(tokenId);
-        return
-            user == owner ||
-            isApprovedForAll(owner, user) ||
-            getApproved(tokenId) == user;
+    function setController(address controller_) external onlyOwner {
+        require(!controllerLocked, "Controller locked");
+        controller = controller_;
+        emit ControllerUpdated(controller_);
+    }
+
+    function lockController() external onlyOwner {
+        controllerLocked = true;
+        emit ControllerLocked();
     }
 
     function supportsInterface(
@@ -68,44 +80,42 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
         return super.supportsInterface(interfaceId);
     }
 
-    function mint(address to) external onlyOwner {
+    function mint(address to) external onlyController {
         uint256 tokenId = nextTokenId++;
         _safeMint(to, tokenId);
         bcellCount[tokenId] = 3;
     }
 
-    function forge(uint256 tokenId) external {
-        require(_isAuthorized(msg.sender, tokenId), "Not authorized");
+    function forge(address payer, uint256 tokenId) external onlyController {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
         require(
             bcellCount[tokenId] >= 1 && bcellCount[tokenId] < MAX_BCELLS,
             "Cannot forge"
         );
         require(
-            honeyToken.transferFrom(msg.sender, address(this), forgeCost),
+            honeyToken.transferFrom(payer, address(this), forgeCost),
             "HONEY transfer failed"
         );
 
         bcellCount[tokenId]++;
         emit Forged(tokenId, bcellCount[tokenId]);
         emit MetadataChanged(tokenId);
-        emit MetadataUpdate(tokenId); // ERC-4906
+        emit MetadataUpdate(tokenId);
     }
 
-    function merge(uint256 tokenId1, uint256 tokenId2) external {
-        require(
-            _isAuthorized(msg.sender, tokenId1),
-            "Not authorized for token 1"
-        );
-        require(
-            _isAuthorized(msg.sender, tokenId2),
-            "Not authorized for token 2"
-        );
+    function merge(
+        address payer,
+        uint256 tokenId1,
+        uint256 tokenId2
+    ) external onlyController {
+        require(_ownerOf(tokenId1) != address(0), "Token1 nonexistent");
+        require(_ownerOf(tokenId2) != address(0), "Token2 nonexistent");
         require(
             bcellCount[tokenId1] == 3 && bcellCount[tokenId2] == 3,
             "Must be 3-bcell comBs"
         );
         require(
-            honeyToken.transferFrom(msg.sender, address(this), mergeCost),
+            honeyToken.transferFrom(payer, address(this), mergeCost),
             "HONEY transfer failed"
         );
 
@@ -115,17 +125,17 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
 
         emit Merged(tokenId1, tokenId2);
         emit MetadataChanged(tokenId1);
-        emit MetadataUpdate(tokenId1); // ERC-4906
+        emit MetadataUpdate(tokenId1);
     }
 
-    function burnBcell(uint256 tokenId) external {
-        require(_isAuthorized(msg.sender, tokenId), "Not authorized");
+    function burnBcell(uint256 tokenId) external onlyController {
+        require(_ownerOf(tokenId) != address(0), "Nonexistent token");
         require(bcellCount[tokenId] >= 1, "No Bcells left");
 
         bcellCount[tokenId]--;
         emit Burned(tokenId, bcellCount[tokenId]);
         emit MetadataChanged(tokenId);
-        emit MetadataUpdate(tokenId); // ERC-4906
+        emit MetadataUpdate(tokenId);
 
         if (bcellCount[tokenId] == 0) {
             _burn(tokenId);

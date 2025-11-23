@@ -1,6 +1,6 @@
 {
-  "name": "comB — 6 Bcells",
-  "description": "A mutable comB. Media updates dynamically with the current number of Bcells.",
+  "name": "comB",
+  "description": "A comB oozing honey containing six Bcells. In Botanica it can be filled further with honey.",
   "image": "ipfs://bafybeiejecjpek4ebgy4jnfru4zcd37ezfeiyu344nzjkjyfmqbh3fbaxy/comb_6_poster.jpg",
   "animation_url": "ipfs://bafybeiejecjpek4ebgy4jnfru4zcd37ezfeiyu344nzjkjyfmqbh3fbaxy/comb_6.mp4",
   "attributes": [{ "trait_type": "Bcells", "value": 6 }]
