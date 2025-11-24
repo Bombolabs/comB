@@ -1,63 +1,76 @@
-# comB NFT
+# comB NFT Protocol
 
-A mutable NFT contract deployed on Berachain for the B Side staking system.
+A modular, controller-driven, mutable NFT standard built for the B Side ecosystem on Berachain.
 
-## Features
+comB NFTs represent honeycomb fragments containing 1–7 Bcells, and evolve on-chain through forging, merging, and burning. The protocol enables an upgradable, deflationary, multiplier-based NFT system without redeploying the core NFT.
 
-- Mutable `bcellCount` attribute
-- $HONEY-based forge and merge mechanics
-- Burn Bcells to unstake or convert rewards
-- On-chain dynamic `tokenURI` based on Bcell count
-- Emits key events for indexing, frontend syncing, and marketplace reindexing
+This repository includes the immutable comB NFT contract, its configurable Controller, deployment scripts, and a full testing suite.
 
-## Setup
+## Overview
 
-```bash
-npm install
-npx hardhat test
-```
+### Why comB?
 
-## Deploy
+The comB NFT functions as an upgradeable multiplier for staking, rewards, and ecosystem mechanics.
 
-Edit deploy scripts or deploy manually using Kingdomly or Hardhat.
+Its state evolves through strictly validated transitions:
 
-## Events Reference
+- Forge increases Bcells
+- Merge combines two 3-Bcell comBs into one 6-Bcell comB
+- Burn Bcell reduces Bcells; NFT is destroyed at 0
+- No economic rules inside comB
+- Upgradeable controller manages all cost, treasury, and future Proof-of-Liquidity rules
 
-This contract emits the following events to help off-chain systems like frontends, dashboards, and marketplaces stay in sync with comB state changes:
+### Architectural Guarantees
 
----
+- The NFT logic is secure and unchanging
+- Economic rules can evolve without redeploying comB
+- Marketplaces automatically re-index metadata changes via ERC-4906
+- Future features such as Vase Finance LP logic or Booga PoL multipliers can be added through the controller
 
-### `event Forged(uint256 indexed tokenId, uint8 newBcellCount)`
+## Architecture
 
-Emitted when a user successfully forges a comB, increasing its Bcell count.
+<architecture diagram omitted for plaintext>
 
----
+## Economic Rules
 
-### `event Merged(uint256 indexed survivor, uint256 indexed burned)`
+### Forge
 
-Emitted when a user merges two 3-Bcell comBs. One is upgraded, one is burned.
+cost = baseCost × currentBcellCount
 
----
+### Merge
 
-### `event Burned(uint256 indexed tokenId, uint8 remainingBcells)`
+- Two 3-Bcell comBs → one 6-Bcell comB
+- One NFT burned
+- Flat 15 HONEY cost
 
-Emitted when a Bcell is burned. If the Bcell count hits 0, the NFT is destroyed.
+### Burn Bcell
 
----
+- Free
+- If Bcells reach 0 → NFT burned permanently
 
-### `event HoneyWithdrawn(address to, uint256 amount)`
+## Metadata Standard
 
-Emitted when the contract owner withdraws HONEY tokens from the contract.
+tokenURI(id) = baseURI + "comb\_<Bcells>.json"
 
----
+Example provided in previous conversation.
 
-### `event BatchMetadataUpdate(uint256 fromTokenId, uint256 toTokenId)`
+## Repository Structure
 
-Emitted when `baseURI` changes — helps OpenSea and others re-index metadata.
-Typically called as:
+contracts/
+scripts/
+test/
+README.md
 
-```solidity
-emit BatchMetadataUpdate(0, type(uint256).max);
-```
+## Development
 
-This ensures all tokens refresh their metadata without needing to call individually.
+npm install  
+npx hardhat test  
+npx hardhat console
+
+## Deployment (Bepolia Testnet)
+
+Env variables and deployment script included.
+
+## License
+
+MIT
