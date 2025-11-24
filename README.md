@@ -27,10 +27,6 @@ Its state evolves through strictly validated transitions:
 - Marketplaces automatically re-index metadata changes via ERC-4906
 - Future features such as Vase Finance LP logic or Booga PoL multipliers can be added through the controller
 
-## Architecture
-
-<architecture diagram omitted for plaintext>
-
 ## Economic Rules
 
 ### Forge
@@ -52,7 +48,15 @@ cost = baseCost × currentBcellCount
 
 tokenURI(id) = baseURI + "comb\_<Bcells>.json"
 
-Example provided in previous conversation.
+```json
+{
+  "name": "comB (3 Bcells)",
+  "description": "A humble comB containing three Bcells. In Botanica it can be filled further with honey.",
+  "image": "ipfs://<CID>/comb_3_poster.jpg",
+  "animation_url": "ipfs://<CID>/comb_3.mp4",
+  "attributes": [{ "trait_type": "Bcells", "value": 3 }]
+}
+```
 
 ## Repository Structure
 
