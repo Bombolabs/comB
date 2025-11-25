@@ -78,6 +78,7 @@ contract ComBNFT is ERC721, ERC721Enumerable, Ownable {
     }
 
     function merge(uint256 tokenId1, uint256 tokenId2) external onlyController {
+        require(tokenId1 != tokenId2, "Cannot merge token with itself");
         require(_ownerOf(tokenId1) != address(0), "Token1 nonexistent");
         require(_ownerOf(tokenId2) != address(0), "Token2 nonexistent");
         require(
