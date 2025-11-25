@@ -9,6 +9,7 @@ const dir = "nft_assets";
 
 async function* walk(d) {
   for (const e of await fs.readdir(d, { withFileTypes: true })) {
+    if (e.name.includes('..')) throw new Error("Invalid file name");
     const full = path.join(d, e.name);
     if (e.isDirectory()) yield* walk(full);
     else yield full;
