@@ -7,7 +7,7 @@ module.exports = {
     hardhat: {},
     bepolia: {
       url: "https://bepolia.rpc.berachain.com",
-      chainId: 80069,                          
+      chainId: 80069,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
